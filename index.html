@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>PhotoPedagogy Sequence</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Cg%20transform='rotate(-7%2016%2016)'%3E%3Crect%20x='8'%20y='8'%20width='16'%20height='16'%20rx='1.5'%20fill='%23fbfbfa'%20stroke='%231c1c1a'%20stroke-width='1.7'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Nunito:wght@400;600&family=Quicksand:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --table:#f1f0ec;--table-edge:#dcddd8;--mount:#fbfbfa;--ink:#2a2826;
+    --text:#1c1c1a;--muted:#9a9690;--soft:#9a978f;--line:#e4e0da;--accent:#cb216e;
+    --card:#d9cdb1;--card-ink:#39342a;--card-edge:#c4b896;
+    --panel:#fbfbf9;
+    --ui:'Quicksand',system-ui,sans-serif;--body:'Nunito',system-ui,sans-serif;
+    --cap:'Cormorant Garamond',Georgia,serif;--type:'Special Elite','Courier New',monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--table);overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:none}
+
+  .wordmark{position:fixed;top:16px;left:18px;z-index:9000;font-family:var(--ui);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);pointer-events:none}
+  .wordmark span{font-weight:500;color:var(--muted)}
+  .wordmark .tag{font-size:9px;font-weight:500;letter-spacing:.14em;color:var(--muted);margin-left:10px}
+
+  .topc{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:9000;display:flex;gap:6px}
+  .topc button{font-family:var(--ui);font-size:12px;font-weight:500;letter-spacing:.02em;color:var(--muted);background:transparent;border:0;padding:6px 12px;border-radius:999px;cursor:pointer}
+  .topc button:hover{background:rgba(255,255,255,.5);color:var(--ink)}
+  .topc button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .tray-label{position:fixed;z-index:6;font-family:var(--ui);font-size:11px;font-weight:500;letter-spacing:.02em;color:var(--muted);pointer-events:none}
+  #pile-hint{position:fixed;z-index:6;font-family:var(--body);font-size:11.5px;color:var(--soft);pointer-events:none;transition:opacity .7s ease}
+  #pile-hint.gone{opacity:0}
+
+  #table{position:fixed;inset:0;z-index:10}
+  .print{position:absolute;top:0;left:0;padding:5px;background:var(--mount);box-shadow:0 1px 3px rgba(40,38,34,.14);cursor:grab;will-change:transform;transition:box-shadow .18s ease}
+  .print.dragging{cursor:grabbing;box-shadow:0 4px 12px rgba(40,38,34,.18)}
+  .print:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .print img{display:block;-webkit-user-drag:none;user-drag:none;background:#d9dad6}
+
+  /* ---- tactics deck (ruled flashcards) ---- */
+  #card-stack{position:fixed;z-index:40;cursor:pointer}
+  .tcard{position:absolute;top:0;left:0;background:#fff;border:1px solid var(--line);border-radius:3px;box-shadow:0 1px 2px rgba(40,38,34,.10);overflow:hidden}
+  .tcard .tc-rule{position:absolute;left:9px;right:9px;top:13px;border-bottom:1px solid rgba(203,33,110,.4)}
+  .tcard .tc-lines{position:absolute;left:9px;right:9px;top:22px;bottom:9px;
+    background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 9px,rgba(0,0,0,.06) 9px,rgba(0,0,0,.06) 10px)}
+  .tcard .tc-head{position:absolute;left:9px;right:9px;top:8px;font-family:var(--cap);font-weight:600;color:var(--text);line-height:1.05;border-bottom:1px solid rgba(203,33,110,.4);padding-bottom:3px}
+  .tcard .tc-mini{position:absolute;left:9px;right:9px;font-family:var(--body);color:var(--soft);overflow:hidden}
+
+  .controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9000;display:flex;gap:4px;align-items:center;background:rgba(251,251,249,.85);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:999px;padding:6px;box-shadow:0 4px 18px rgba(40,38,34,.10)}
+  .controls button{font-family:var(--ui);font-size:13px;font-weight:500;color:var(--ink);background:transparent;border:0;border-radius:999px;padding:8px 15px;cursor:pointer;line-height:1;white-space:nowrap}
+  .controls button:hover{background:#eeeee9}
+  .controls button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .controls .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+
+  /* ---- print lightbox + flip ---- */
+  #lightbox{position:fixed;inset:0;z-index:9700;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:rgba(28,27,25,.62);backdrop-filter:blur(3px);padding:5vh 5vw;perspective:1800px}
+  #lightbox.on{display:flex}
+  .flip{position:relative;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.4,.05,.2,1)}
+  .flip.flipped{transform:rotateY(180deg)}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .face.front{background:var(--mount);padding:8px;box-shadow:0 10px 50px rgba(0,0,0,.4)}
+  .face.front img{display:block;width:100%;height:100%;object-fit:contain;background:#d9dad6}
+  .face.back{transform:rotateY(180deg);background:var(--card);box-shadow:0 10px 50px rgba(0,0,0,.4);background-image:radial-gradient(120% 120% at 30% 0%,rgba(255,255,255,.18),transparent 55%),radial-gradient(140% 140% at 80% 100%,rgba(120,104,70,.12),transparent 50%);display:flex}
+  .face.back.plain{background:var(--mount);background-image:none}
+  .card{width:100%;height:100%;overflow:auto;padding:7% 8%;color:var(--card-ink);font-family:var(--type);border:1px solid var(--card-edge);outline:1px solid rgba(0,0,0,.04);outline-offset:-5px;line-height:1.5}
+  .card.usr{border-color:var(--line);color:#6a655c;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--ui);letter-spacing:.04em}
+  .card .c-cap{margin:0 0 1.1em;font-size:1.06em;letter-spacing:.2px}
+  .card .c-row{display:flex;flex-wrap:wrap;gap:.2em 1.4em;font-size:.72em;letter-spacing:.4px;color:#4c453a;text-transform:uppercase}
+  .card .c-stamp{margin-top:1.3em;display:inline-block;border:1.5px solid #5a5246;color:#5a5246;padding:.34em .6em;font-size:.66em;letter-spacing:1px;transform:rotate(-1.4deg);opacity:.82;text-transform:uppercase}
+  .card .c-link{display:block;margin-top:1.5em;font-family:var(--ui);font-size:.66em;letter-spacing:.4px;color:#6f6553;text-decoration:none}
+  .card .c-link:hover{color:var(--accent)}
+  .lb-cap{text-align:center;max-width:min(560px,90vw)}
+  .lb-cap .short{font-family:var(--cap);font-style:italic;color:#f2efe9;font-size:19px;line-height:1.35}
+  .lb-cap .reveal{display:inline-block;margin-top:10px;font-family:var(--body);font-size:12.5px;letter-spacing:.3px;color:#d2cec6;cursor:pointer;border-bottom:1px solid rgba(210,206,198,.4)}
+  .lb-cap .reveal:hover{color:#fff}
+
+  /* ---- tactics reader ---- */
+  #cardbox{position:fixed;inset:0;z-index:9700;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:rgba(28,27,25,.62);backdrop-filter:blur(3px);padding:5vh 5vw;perspective:2000px}
+  #cardbox.on{display:flex}
+  .fc-flip{position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,.05,.2,1)}
+  .fc-flip.flipped{transform:rotateY(180deg)}
+  .fc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:#fff;border:1px solid #d9d4cc;box-shadow:0 14px 50px rgba(0,0,0,.4);display:flex;flex-direction:column;cursor:pointer}
+  .fc-face.fc-back{transform:rotateY(180deg)}
+  .fc-name{font-family:var(--cap);font-weight:600;color:var(--text);line-height:1.05;border-bottom:1px solid rgba(203,33,110,.4)}
+  .fc-name.muted{color:var(--muted);font-style:italic;font-weight:500}
+  .fc-body{flex:1;overflow:auto;color:#5b574f;background-origin:content-box;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--rh) - 1px),rgba(0,0,0,.06) calc(var(--rh) - 1px),rgba(0,0,0,.06) var(--rh))}
+  .fc-instr{color:var(--ink);font-weight:600;font-family:var(--body)}
+  .fc-how{font-family:var(--body)}
+  .fc-body p{margin:0}
+  .fc-dia{float:right;width:24%;height:auto;aspect-ratio:1/1;margin:1px 0 6px 14px;color:#8f8979}
+  .fc-body a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(203,33,110,.35)}
+  .fc-body a:hover{border-color:var(--accent);background:rgba(203,33,110,.06)}
+  .fc-bar{display:flex;align-items:center;gap:18px;color:#e7e3db;font-family:var(--ui);font-size:13px}
+  .fc-bar .nav{cursor:pointer;color:#d2cec6;font-size:22px;line-height:1;padding:4px 8px;user-select:none}
+  .fc-bar .nav:hover{color:#fff}
+  .fc-bar .turn{cursor:pointer;color:#d2cec6;border-bottom:1px solid rgba(210,206,198,.4)}
+  .fc-bar .turn:hover{color:#fff}
+  .fc-bar .idx{color:#a7a39b;font-size:11.5px;letter-spacing:.1em;min-width:48px;text-align:center}
+
+  /* ---- drawers ---- */
+  #scrim{position:fixed;inset:0;z-index:9400;background:rgba(28,27,25,.34);opacity:0;pointer-events:none;transition:opacity .35s ease}
+  #scrim.on{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(460px,94vw);z-index:9500;background:var(--panel);box-shadow:-8px 0 40px rgba(40,38,34,.18);transform:translateX(100%);transition:transform .4s cubic-bezier(.3,.7,.2,1);overflow-y:auto;padding:30px 28px 40px}
+  .drawer.on{transform:translateX(0)}
+  .drawer h2{font-family:var(--cap);font-weight:500;font-size:24px;margin:0 0 4px;color:var(--ink)}
+  .drawer .close{position:absolute;top:18px;right:20px;font-family:var(--ui);font-size:20px;color:var(--muted);background:transparent;border:0;cursor:pointer;line-height:1}
+  .drawer p{font-family:var(--body);font-size:14px;line-height:1.62;color:#3c3a36;margin:0 0 14px}
+  .drawer .small{font-size:12px;color:var(--soft)}
+  .drawer a{color:#3c3a36;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;text-decoration-color:#bdb8ae}
+  .filebtn{display:inline-block;font-family:var(--ui);font-size:13px;font-weight:600;color:#fff;background:var(--accent);border-radius:999px;padding:10px 18px;cursor:pointer;margin:4px 0 8px}
+  .filebtn:hover{filter:brightness(1.05)}
+  #file{display:none}
+  .setrow{display:flex;gap:8px;margin:14px 0 6px}
+  .setrow button{flex:1;font-family:var(--ui);font-size:12.5px;font-weight:500;color:var(--ink);background:#efefea;border:1px solid var(--line);border-radius:8px;padding:9px 8px;cursor:pointer}
+  .setrow button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .linkbtn{font-family:var(--ui);font-size:12px;color:var(--soft);background:transparent;border:0;cursor:pointer;padding:6px 0;text-decoration:underline}
+  .linkbtn:hover{color:var(--accent)}
+
+  #scrap{position:fixed;inset:0;z-index:9300;display:none;align-items:center;justify-content:center;padding:6vh 6vw;background:rgba(42,40,36,.16);backdrop-filter:blur(1.5px);cursor:pointer;transition:opacity .45s ease}
+  #scrap.gone{opacity:0;pointer-events:none}
+  .scrap-note{width:560px;max-width:94vw;max-height:86vh;overflow:auto;color:#2b2723;background-color:#f4f1ea;background-image:radial-gradient(135% 120% at 12% -8%,rgba(255,255,250,.5),rgba(255,255,250,0) 55%),radial-gradient(120% 120% at 106% 110%,rgba(196,186,162,.08),rgba(196,186,162,0) 55%),url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='140'%20height='140'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.85'%20numOctaves='2'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='saturate'%20values='0'/%3E%3C/filter%3E%3Crect%20width='140'%20height='140'%20filter='url(%23n)'%20opacity='0.06'/%3E%3C/svg%3E");border:1px solid #e8e0cf;border-radius:3px;box-shadow:0 14px 40px rgba(40,38,34,.24);transform:rotate(var(--rot,-1.4deg));transition:transform .45s ease}
+  #scrap.gone .scrap-note{transform:rotate(var(--rot,-1.4deg)) translateY(-12px)}
+  .scrap-q{font-family:var(--type);font-size:16px;line-height:1.6;color:inherit}
+  .scrap-who{margin-top:20px;font-family:var(--type);font-size:16px;letter-spacing:.02em;color:inherit;text-align:right}
+  .scrap-hint{position:absolute;left:0;right:0;bottom:7vh;text-align:center;font-family:var(--ui);font-size:11.5px;color:var(--muted)}
+  #read{position:fixed;inset:0;z-index:9680;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#f5f3ee}
+  .read-close{position:fixed;top:18px;right:22px;z-index:9681;width:40px;height:40px;border:0;border-radius:999px;background:rgba(245,243,238,.82);backdrop-filter:blur(4px);font-family:var(--ui);font-size:23px;line-height:1;color:var(--muted);cursor:pointer}
+  .read-close:hover{color:var(--ink)}
+  .read-inner{max-width:680px;margin:0 auto;padding:9vh 26px 14vh}
+  .read-title{font-family:var(--cap);font-weight:500;font-size:30px;color:var(--ink);text-align:center;margin:0 0 7px}
+  .read-sub{font-family:var(--ui);font-size:12.5px;letter-spacing:.03em;color:var(--muted);text-align:center;margin:0 0 7vh}
+  .read-q{margin:0 0 4.2em}
+  .rq-text{font-family:var(--cap);font-size:20px;line-height:1.5;color:#2c2a27;margin:0 0 .55em;white-space:pre-line}
+  .rq-who{font-family:var(--ui);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);text-align:right;margin:0}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wordmark">Photo<span>Pedagogy</span><span class="tag">Sequence</span></div>
+
+<div class="topc">
+  <button id="b-images">Your images</button>
+  <button id="b-info">Info</button>
+</div>
+
+<div id="pile-hint">Drag a print out to begin.</div>
+
+<div class="tray-label" id="card-label">Select a tactic</div>
+<div id="card-stack" role="button" tabindex="0" aria-label="Tactics deck"></div>
+
+<div id="table" aria-label="Editing table"></div>
+
+<div class="controls">
+  <button id="b-shuffle">Shuffle</button>
+  <button id="b-spread">Spread</button>
+  <button id="b-gather">Gather</button>
+  <span class="sep"></span>
+  <button id="b-chance">By chance</button>
+  <button id="b-tone">By tone</button>
+  <span class="sep"></span>
+  <button id="b-save">Save image</button>
+</div>
+
+<div id="read" role="dialog" aria-label="Anthology">
+  <button class="read-close" id="read-close" aria-label="Close">×</button>
+  <div class="read-inner">
+    <h2 class="read-title">On editing and sequencing</h2>
+    <p class="read-sub">Photographers and writers on choosing pictures and putting them in order.</p>
+    <div id="read-list"></div>
+  </div>
+</div>
+
+<div id="scrap"><div class="scrap-note"><div class="scrap-q" id="scrap-q"></div><div class="scrap-who" id="scrap-who"></div></div><div class="scrap-hint">tap anywhere to clear</div></div>
+
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Print, enlarged">
+  <div class="flip" id="lb-flip">
+    <div class="face front"><img id="lb-img" alt=""></div>
+    <div class="face back" id="lb-back"><div class="card" id="lb-card"></div></div>
+  </div>
+  <div class="lb-cap"><div class="short" id="lb-short"></div><div class="reveal" id="lb-reveal">Turn it over</div></div>
+</div>
+
+<div id="cardbox" role="dialog" aria-modal="true" aria-label="Tactic">
+  <div class="fc-flip" id="fc-flip">
+    <div class="fc-face fc-front"><div class="fc-name" id="fc-title"></div><div class="fc-body" id="fc-frontbody"></div></div>
+    <div class="fc-face fc-back"><div class="fc-name muted">Behind the card</div><div class="fc-body" id="fc-backbody"></div></div>
+  </div>
+  <div class="fc-bar">
+    <span class="nav" id="fc-prev" aria-label="Previous">‹</span>
+    <span class="turn" id="fc-turn">Turn it over</span>
+    <span class="idx" id="fc-idx"></span>
+    <span class="nav" id="fc-next" aria-label="Next">›</span>
+  </div>
+</div>
+
+<div id="scrim"></div>
+<div class="drawer" id="drawer-info" role="dialog" aria-label="About">
+  <button class="close" data-close>×</button>
+  <h2>About</h2>
+  <p>A photograph does not tell a story. You do. Set two pictures side by side and the mind reaches for the thread between them, a before and an after, a cause, a rhyme. The picture holds still; the meaning is in the order. This app is an attempt to help you practice editing (selecting) and sequencing (ordering) photographs in order to make meanings. Making something that is more than the sum of its parts. The idea came partly from photographic artist Sam Contis who selected pictures from Dorothea Lange’s archive to make <a href="https://mackbooks.co.uk/products/day-sleeper-dorothea-lange-sam-contis-ed" target="_blank" rel="noopener">Day Sleeper</a>. How did she decide which pictures to choose and place in a specific order?</p>
+  <p>I’d been exploring pictures in the FSA archive for a lesson about zines. I was drawn to the work of Gordon Parks. So, here are twenty-five photographs by Parks, made in the early 1940s for a United States government project, and a table to lay them out on. There is no correct order. The pictures are from several different assignments and have never been shown together before.</p>
+  <p>Drag a print off the pile to begin. Move them by eye first, trusting what seems to follow what. Turn a print over to read where and when it was made. When you want to find out more, select a tactic card from the deck on the right, or let the table arrange itself by chance or by tone and see what happens. Then take it back into your own hands.</p>
+  <p>Once you’ve practised with Parks’ pictures, shuffling them into different sequences, noticing what happens and how the meanings shift, you should upload a set of your own pictures. Lay them out on the same table. The same gestures, the same tactics apply to them.</p>
+  <p>A small and growing anthology of remarks on editing and sequencing lives <a href="#read">here</a>.</p>
+  <p class="small">Photographs by Gordon Parks, Farm Security Administration / Office of War Information, Library of Congress.</p>
+</div>
+
+<div class="drawer" id="drawer-upload" role="dialog" aria-label="Your images">
+  <button class="close" data-close>×</button>
+  <h2>Your images</h2>
+  <p>Bring your own photographs to the table. Add up to thirty-six and they go into the pile, top left, to be dealt, arranged, shuffled and sorted exactly as the Parks set is.</p>
+  <p class="small">They stay on your device. Nothing is uploaded anywhere.</p>
+  <label class="filebtn" for="file">Choose images</label>
+  <input id="file" type="file" accept="image/*" multiple>
+  <div id="upload-status" class="small"></div>
+  <div class="setrow" id="setrow" style="display:none">
+    <button id="set-parks" class="active">Parks set</button>
+    <button id="set-mine">Your images</button>
+  </div>
+  <button id="clear-mine" class="linkbtn" style="display:none">Remove my images</button>
+</div>
+
+<script>
+const MANIFEST = [{"n": 1, "id": "8d28519r", "locId": "8d28519r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d28519", "full": "New York, New York. A Harlem newsboy, May, 1943", "conf": "firm", "short": "New York. A newsboy at the hoardings, 1943", "aspect": 1.0037, "lum": 140.3, "src": "images/8d28519r.jpg"}, {"n": 2, "id": "8d08022r", "locId": "8d08022r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d08022", "full": "Washington, D.C. International student assembly. Mrs. Phillip W. Han, a Korean student at Syracuse University, September, 1942", "conf": "firm", "short": "Washington, D.C. A student at the international assembly, 1942", "aspect": 0.7819, "lum": 85.9, "src": "images/8d08022r.jpg"}, {"n": 3, "id": "8d11382r", "locId": "8d11382r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d11382", "full": "Fort Belvoir, Virginia. Constantine P. Lihas, a twenty-one year old Greek-American soldier... Lihas in gas mask and decontamination suit, Dec, 1942", "conf": "check", "short": "Fort Belvoir, Virginia. A soldier in a gas mask, 1942", "aspect": 0.777, "lum": 116.2, "src": "images/8d11382r.jpg"}, {"n": 4, "id": "8d08153r", "locId": "8d08153r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d08153", "full": "Washington, D.C. Foreign students at the international student assembly recording short talks... Mr. Brian Kallaway... recording a short wave broadcast for Australia, Sept, 1941", "conf": "firm", "short": "Washington, D.C. A man at a recording desk, 1941", "aspect": 1.2978, "lum": 154.7, "src": "images/8d08153r.jpg"}, {"n": 5, "id": "8d44955r", "locId": "8d44955r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d44955", "full": "Washington, D.C. Man who was driven from his home by flood waters receiving hot coffee from an emergency canteen set up by the United States Office of Civilian Defence, Oct, 1942", "conf": "firm", "short": "Washington, D.C. A man driven out by the flood, 1942", "aspect": 0.7688, "lum": 109.2, "src": "images/8d44955r.jpg"}, {"n": 6, "id": "8d44960v", "locId": "8d44960v", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d44960", "full": "United States Office of Civilian Defence workers testing depth of flood water in a street. Washington, D.C., Oct, 1942", "conf": "firm", "short": "Washington, D.C. Workers testing the flood water, 1942", "aspect": 1.2921, "lum": 79.3, "src": "images/8d44960v.jpg"}, {"n": 7, "id": "8d09550r", "locId": "8d09550r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d09550", "full": "Washington, D.C. Young convert at Sunday morning service of the Church of God in Christ, Nov, 1942", "conf": "firm", "short": "Washington, D.C. A convert at the Sunday service, 1942", "aspect": 0.7659, "lum": 154.2, "src": "images/8d09550r.jpg"}, {"n": 8, "id": "8d09564r", "locId": "8d09564r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d09564", "full": "Washington, D.C. Young girl being converted at the Church of God in Christ, Nov, 1942", "conf": "check", "short": "Washington, D.C. A woman being converted, 1942", "aspect": 0.7725, "lum": 109.2, "src": "images/8d09564r.jpg"}, {"n": 9, "id": "8d23338r", "locId": "8d23338r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d23338", "full": "Washington, D.C. Mr. Venus Alsobrook, official salvage collector for the government, Nov, 1942", "conf": "firm", "short": "Washington, D.C. A salvage collector with his bundle, 1942", "aspect": 1.0117, "lum": 133.2, "src": "images/8d23338r.jpg"}, {"n": 10, "id": "8d10073v", "locId": "8d10073v", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d10073", "full": "Washington (southwest section), D.C. Negro woman in her bedroom, Nov, 1942", "conf": "firm", "short": "Washington, D.C. A woman in her bedroom, 1942", "aspect": 0.773, "lum": 73.5, "src": "images/8d10073v.jpg"}, {"n": 11, "id": "8d10351v", "locId": "8d10351v", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d10351", "full": "Washington, D.C. First aid class of the air raid warden unit in the Southwest area... applying splint, Nov, 1942", "conf": "firm", "short": "Washington, D.C. A first-aid class, applying a splint, 1942", "aspect": 0.7738, "lum": 147.4, "src": "images/8d10351v.jpg"}, {"n": 12, "id": "8d10974r", "locId": "8d10974r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d10974", "full": "Washington, D.C. Mr. Thomas E. Flaherty, supervisor of the ticket office at the Union Station, Nov, 1942", "conf": "firm", "short": "Washington, D.C. The ticket office at Union Station, 1942", "aspect": 0.7767, "lum": 44.6, "src": "images/8d10974r.jpg"}, {"n": 13, "id": "8d12222r", "locId": "8d12222r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d12222", "full": "Firehouse station number four. Washington, D.C. Smoke... coming from a window of a home that was set afire by a faulty heater, Jan, 1943", "conf": "firm", "short": "Washington, D.C. Smoke from a house fire, 1943", "aspect": 0.7679, "lum": 135.2, "src": "images/8d12222r.jpg"}, {"n": 14, "id": "8d24713r", "locId": "8d24713r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d24713", "full": "Daytona Beach, Florida. Bethune-Cookman College. \"Zoot suits\", Jan, 1943", "conf": "firm", "short": "Daytona Beach, Florida. Zoot suits, seen at the legs, 1943", "aspect": 1.0184, "lum": 132.7, "src": "images/8d24713r.jpg"}, {"n": 15, "id": "8d12527r", "locId": "8d12527r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d12527", "full": "Daytona Beach, Florida. Bethune-Cookman College. NYA students learning welding, Jan, 1943", "conf": "firm", "short": "Daytona Beach, Florida. Students learning to weld, 1943", "aspect": 1.2876, "lum": 151.5, "src": "images/8d12527r.jpg"}, {"n": 16, "id": "8d25424r", "locId": "8d25424r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d25424", "full": "Daytona Beach, Florida. Bethune-Cookman College. Eggs gathered by a student on the agricultural school farm, Feb, 1943", "conf": "firm", "short": "Daytona Beach, Florida. Eggs gathered on the school farm, 1943", "aspect": 1.0134, "lum": 129.2, "src": "images/8d25424r.jpg"}, {"n": 17, "id": "8d13696v", "locId": "8d13696v", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d13696", "full": "Daytona Beach, Florida. This boy, who is a NYA student, receives thirty-five cents an hour for chopping wood... pay his tuition fees, Feb, 1943", "conf": "firm", "short": "Daytona Beach, Florida. A boy chopping wood for his fees, 1943", "aspect": 0.7752, "lum": 147.2, "src": "images/8d13696v.jpg"}, {"n": 18, "id": "8d13796r", "locId": "8d13796r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8d13796", "full": "Daytona Beach, Florida. Bethune-Cookman College. Instructor showing steps in a modern dance class, Feb, 1943", "conf": "firm", "short": "Daytona Beach, Florida. A modern dance class, 1943", "aspect": 1.2922, "lum": 149.9, "src": "images/8d13796r.jpg"}, {"n": 19, "id": "8b14789v", "locId": "8b14789v", "call": "", "loc_url": "https://www.loc.gov/search/?q=8b14789", "full": "Washington, D.C. Exteriors of houses being wrecked on Independence Avenue, June, 1942", "conf": "firm", "short": "Washington, D.C. Houses being wrecked on the avenue, 1942", "aspect": 0.7707, "lum": 126.0, "src": "images/8b14789v.jpg"}, {"n": 20, "id": "8b14821r", "locId": "8b14821r", "call": "", "loc_url": "https://www.loc.gov/search/?q=8b14821", "full": "Anacostia, D.C. Frederick Douglass housing project. Boy at the playground, June, 1942", "conf": "firm", "short": "Anacostia, D.C. A boy at the playground, 1942", "aspect": 0.7809, "lum": 173.1, "src": "images/8b14821r.jpg"}, {"n": 21, "id": "8b14819v", "locId": "8b14819v", "call": "neg. 13370 (FSA/OWI; confirm LC prefix on item page)", "loc_url": "https://www.loc.gov/search/?q=8b14819", "full": "Anacostia, D.C. Frederick Douglass housing project. Playing in the community sprayer, June 1942", "conf": "firm", "short": "Anacostia, D.C. A child in the community sprayer, 1942", "aspect": 0.7759, "lum": 159.5, "src": "images/8b14819v.jpg"}, {"n": 22, "id": "8d39763v", "locId": "8d39763v", "call": "LC-USW3-034264-C (OWI 34264; confirm)", "loc_url": "https://www.loc.gov/search/?q=8d39763", "full": "New Britain, Connecticut. A welder at the Landers, Frary and Clark plant, June, 1943", "conf": "firm", "short": "New Britain, Connecticut. A welder in the dark, 1943", "aspect": 0.7954, "lum": 57.0, "src": "images/8d39763v.jpg"}, {"n": 23, "id": "8d32628v", "locId": "8d32628v", "call": "LC-USW3-036724-C (OWI 36724; confirm)", "loc_url": "https://www.loc.gov/search/?q=8d32628", "full": "Haverstraw, New York. Interracial activities at Camp Christmas Seals, where children are aided by the Methodist Camp Service. Camp buddies, Aug?, 1943", "conf": "firm", "short": "Haverstraw, New York. Two camp friends, cheek to cheek, 1943", "aspect": 1.013, "lum": 164.9, "src": "images/8d32628v.jpg"}, {"n": 24, "id": "8b14779v", "locId": "8b14779v", "call": "neg. 13329-C (FSA/OWI; confirm LC prefix on item page)", "loc_url": "https://www.loc.gov/search/?q=8b14779", "full": "Washington, D.C. Interiors of wrecked homes on Independence Avenue across from the Smithsonian Institute, June, 1942", "conf": "firm", "short": "Washington, D.C. A wrecked staircase, the Smithsonian beyond, 1942", "aspect": 0.7751, "lum": 115.9, "src": "images/8b14779v.jpg"}, {"n": 25, "id": "8b14786v", "locId": "8b14786v", "call": "neg. 13336-C (FSA/OWI; confirm LC prefix on item page)", "loc_url": "https://www.loc.gov/search/?q=8b14786", "full": "Washington, D.C. Song sheets and a fan left behind in an abandoned church on Independence Avenue, June, 1942", "conf": "firm", "short": "Washington, D.C. Song sheets in an abandoned church, 1942", "aspect": 0.7727, "lum": 85.3, "src": "images/8b14786v.jpg"}];
+const W='https://en.wikipedia.org/wiki/';
+function a(href,txt){return `<a href="${W}${href}" target="_blank" rel="noopener">${txt}</a>`;}
+const TACTICS=[
+ {t:'The Eye',
+  f:'Put the pictures in the order that feels right. Don\u2019t explain why.',
+  h:'Forget dates and places. Forget the story. Go by mood. Lay one picture down, then the next that seems to belong beside it. Trust your gut. If someone asks why, you owe them no answer.',
+  b:`${a('Minor_White','Minor White')} arranged photographs into sequences you take in by feeling. He believed a picture could stand for a feeling it never directly shows, an idea he took from ${a('Alfred_Stieglitz','Alfred Stieglitz')}, who called it the \u201cequivalent.\u201d Some orders simply feel right, for reasons you can\u2019t quite put into words.`},
+ {t:'The Rhyme',
+  f:'Find pictures that look alike, and lay them in a row so each one leads to the next.',
+  h:'Pick one thing to follow: a shape, a glance, a fall of light, a gesture. Choose five or six pictures that share it. Lay them so your eye steps easily from one to the next.',
+  b:`${a('Aby_Warburg','Aby Warburg')} pinned hundreds of pictures to black cloth and grouped them by likeness across centuries, a wall he called Mnemosyne, after the Greek goddess of memory. Sequencing by rhyme is that, an easy conversation between pictures that echo one another.`},
+ {t:'The Argument',
+  f:'Put two pictures together that don\u2019t quite match, and watch a new idea appear between them.',
+  h:'Choose two pictures that clash or surprise you and set them side by side. Read the pair as one thing. Then add a third that answers them, like a conclusion.',
+  b:`The filmmaker ${a('Kuleshov_effect','Lev Kuleshov')} cut the same blank face against a bowl of soup, a child\u2019s coffin, a reclining woman. Viewers swore the face changed, reading hunger, then grief, then desire. It never moved. The meaning came from the join. ${a('Sergei_Eisenstein','Eisenstein')} built whole films this way and called it ${a('Soviet_montage_theory','montage')}.`},
+ {t:'The Pair',
+  f:'Work in twos. Choose two pictures that belong side by side, then the next two.',
+  h:'Treat each pair as a single unit. The two can echo each other or pull against each other, as long as they speak across the gap. Build the whole run out of pairs rather than single pictures.',
+  b:`${a('Diptych','\u201cDiptych\u201d')} is an old word for two panels hinged together, from the Greek for \u201cfolded in two.\u201d A photobook does the same on every spread, its left page weighed against its right across the fold.`},
+ {t:'The Arc',
+  f:'Build a rise and a fall. Start quiet, climb to one big moment, then come down.',
+  h:'Choose a picture to open on calmly. Add pictures that raise the pressure step by step to a single peak. Then let it settle with a quieter close.',
+  b:`In the 1860s a German writer, ${a('Gustav_Freytag','Gustav Freytag')}, drew this shape as a ${a('Dramatic_structure','pyramid')} to explain how plays work. It sits under most films and stories you already know, so common you reach for it without noticing.`},
+ {t:'The Turn',
+  f:'Tell a short story in four pictures. Nobody has to win or lose.',
+  h:'One, show where we are. Two, stay there and show more. Three, something different, a surprise that breaks the pattern. Four, bring it back together. Picture three is the whole point.',
+  b:`This four-part shape, ${a('Kish%C5%8Dtenketsu','kish\u014dtenketsu')}, comes from China and Japan. It holds your attention without an argument or a fight, which Western storytelling rarely manages.`},
+ {t:'The Withholding',
+  f:'Hide the picture that explains everything. Save it for last, or leave it out.',
+  h:'Find the one picture that answers the question everyone is asking. Keep it back. Put it right at the end for a jolt, or remove it and let people stay puzzled.',
+  b:`Old film serials broke off each week at the worst possible moment so you would come back, the ${a('Cliffhanger','cliffhanger')}. A held-back picture pulls the same way.`},
+ {t:'The Fall',
+  f:'Make the ending feel doomed from early on, and let it happen anyway.',
+  h:'Plant a picture near the start that hints at how this must end. Build toward that end so it feels unavoidable. Don\u2019t soften it. The power is in seeing it coming and being unable to stop it.',
+  b:`${a('Aristotle','Aristotle')} thought the finest tragedies turn on a ${a('Peripeteia','reversal')} you half expected, the hero walking open-eyed into the fate laid for them. Knowing the end rarely lessens it. Often it deepens it.`},
+ {t:'The Jolt',
+  f:'Put the pictures in an order that jars. Each change should catch you off guard.',
+  h:'Look for pictures that do not belong together. Set them so each one breaks from the last. No smooth links. No easy path for the eye. Aim for the order that feels slightly wrong, like a dream you cannot place.',
+  b:`The ${a('Surrealism','Surrealists')} chased exactly this, prizing the strange meeting of things that should never share a frame. In film they had the ${a('Jump_cut','jump-cut')}, a join that refuses to flow and leaves you unsteady. The strangeness is the point.`},
+ {t:'The Rule',
+  f:'Give yourself one strict rule and obey it, even when it hurts.',
+  h:'Invent a rule before you start. Every other picture must be dark. Only pictures with hands. No two faces in a row. Then build the sequence by following it without cheating, and see what the rule forces you to notice.',
+  b:`The ${a('Oulipo','Oulipo')} writers set themselves absurd constraints, one wrote ${a('A_Void','a whole novel without the letter E')}. ${a('John_Cage','John Cage')} tossed coins and read the ${a('I_Ching','I Ching')} to compose music by chance, and the Surrealists played ${a('Exquisite_corpse','blind drawing games')} to outwit their own taste. A rule, or a roll of the dice, gets your habits out of the way.`},
+ {t:'The Constellation',
+  f:'Don\u2019t make a line. Choose one picture for the centre and place the others around it, joined across the gaps.',
+  h:'A wall, not a book. Read in every direction at once.',
+  b:`${a('Walter_Benjamin','Walter Benjamin')} imagined history not as a line but as a ${a('Theses_on_the_Philosophy_of_History','constellation')}, scattered moments that flash into meaning only when arranged together, with Klee\u2019s ${a('Angelus_Novus','Angelus Novus')} at the centre of his thinking. ${a('Aby_Warburg','Aby Warburg')} pinned his pictures the same way, in panels of affinity rather than order. This is the logic of the gallery wall, not the book.`},
+ {t:'The Ballad',
+  f:'Choose your opening note. Each picture after adds a sound, in harmony or in discord. Compose the whole run like music.',
+  h:'Mind the rhythm and the refrains, the swells and the silences. Goldin ran hers to a soundtrack.',
+  b:`${a('Nan_Goldin','Nan Goldin')} first showed ${a('The_Ballad_of_Sexual_Dependency','The Ballad of Sexual Dependency')} as a slideshow cut to music, the images timed to the Velvet Underground and Nina Simone. The editor Marvin Heiferman calls sequencing very much like making music, getting things to flow and turn the page. A sequence keeps time whether you mean it to or not.`},
+ {t:'The Drift',
+  f:'Don\u2019t plot a route, drift one. Let the mood of each picture decide where you wander next, and don\u2019t mind getting lost.',
+  h:'A walk with no destination, alert to atmosphere. Detours and dead ends are the point.',
+  b:`The ${a('Situationist_International','Situationists')} called this the ${a('D%C3%A9rive','d\u00e9rive')}, a drift through the city steered by mood and atmosphere rather than the map, a way of getting productively lost. It belongs to ${a('Psychogeography','psychogeography')}, ${a('Guy_Debord','Guy Debord')}\u2019s study of how place works on feeling, and it walks on through ${a('Iain_Sinclair','Iain Sinclair')}\u2019s London. A sequence can be wandered as much as planned.`}
+];
+const DIA=[
+ `<circle cx="50" cy="50" r="27"/><path d="M50 50 L61 33 L53 50 Z" fill="currentColor" stroke="none"/><path d="M50 50 L39 67 L47 50 Z"/><circle cx="50" cy="50" r="2.4" fill="currentColor" stroke="none"/>`,
+ `<path d="M34 30 Q56 50 34 70"/><path d="M48 26 Q74 50 48 74"/><path d="M22 35 Q38 50 22 65"/>`,
+ `<rect x="12" y="38" width="26" height="28" rx="2"/><rect x="62" y="38" width="26" height="28" rx="2"/><path d="M50 42 L50 60"/><path d="M41 51 L59 51"/><path d="M44 45 L56 57"/><path d="M56 45 L44 57"/>`,
+ `<rect x="20" y="32" width="26" height="36" rx="2"/><rect x="54" y="32" width="26" height="36" rx="2"/><line x1="50" y1="28" x2="50" y2="72" opacity="0.35"/>`,
+ `<line x1="14" y1="76" x2="86" y2="76" opacity="0.35"/><path d="M18 74 L50 30 L82 74"/><circle cx="50" cy="30" r="2.6" fill="currentColor" stroke="none"/>`,
+ `<rect x="13" y="42" width="16" height="16" rx="2"/><rect x="34" y="42" width="16" height="16" rx="2"/><rect x="55" y="42" width="16" height="16" rx="2"/><rect x="76" y="42" width="16" height="16" rx="2"/><circle cx="63" cy="50" r="3" fill="currentColor" stroke="none"/>`,
+ `<rect x="14" y="38" width="22" height="30" rx="2"/><rect x="40" y="38" width="22" height="30" rx="2"/><rect x="66" y="38" width="22" height="30" rx="2" stroke-dasharray="3 3" opacity="0.6"/>`,
+ `<path d="M22 26 C42 40 50 58 70 74"/><path d="M61 71 L71 75 L67 65"/>`,
+ `<path d="M14 50 L32 38 L44 62 L58 38 L70 62 L86 50" stroke-linejoin="miter"/>`,
+ `<rect x="30" y="30" width="40" height="40" rx="6"/><circle cx="42" cy="42" r="2.4" fill="currentColor" stroke="none"/><circle cx="50" cy="50" r="2.4" fill="currentColor" stroke="none"/><circle cx="58" cy="58" r="2.4" fill="currentColor" stroke="none"/>`,
+ `<line x1="50" y1="50" x2="26" y2="30"/><line x1="50" y1="50" x2="74" y2="24"/><line x1="50" y1="50" x2="84" y2="58"/><line x1="50" y1="50" x2="58" y2="80"/><line x1="50" y1="50" x2="22" y2="66"/><line x1="26" y1="30" x2="74" y2="24"/><line x1="22" y1="66" x2="58" y2="80"/><circle cx="26" cy="30" r="2.4" fill="currentColor" stroke="none"/><circle cx="74" cy="24" r="2.4" fill="currentColor" stroke="none"/><circle cx="84" cy="58" r="2.4" fill="currentColor" stroke="none"/><circle cx="58" cy="80" r="2.4" fill="currentColor" stroke="none"/><circle cx="22" cy="66" r="2.4" fill="currentColor" stroke="none"/><circle cx="50" cy="50" r="4.2" fill="currentColor" stroke="none"/>`,
+ `<path d="M8 50 C16 50 16 40 24 40 C32 40 32 60 40 60 C48 60 48 26 56 26 C64 26 64 74 72 74 C80 74 80 44 88 44 C92 44 92 50 94 50"/>`,
+ `<circle cx="16" cy="74" r="3" fill="currentColor" stroke="none"/><path d="M16 74 C28 48 42 80 54 52 C62 44 66 44 70 42" stroke-dasharray="4 4"/><path d="M72 32 C72 23 86 23 85 32 C84 39 78 40 78 47"/><circle cx="78" cy="53" r="1.8" fill="currentColor" stroke="none"/>`
+];
+
+const QUOTES=[
+ {q:"To engage a sequence we keep in mind the photographs on either side of the one in our eye.",w:"Minor White"},
+ {q:"So the problem for the photographer remains: how to create images and a sequence that’s sustaining and engaging, but asks people to wait, to not think they know, but to be suspended and uncertain along with those pictured whose lives are unpredictable and unraveling.",w:"Susan Meiselas"},
+ {q:"Sequences are to me like haiku, just moments. I was dissatisfied with the single image because I could not bend it to a wider expression. In a sequence the sum total of all the photographs suggest something that no one picture could say. There is no point to doing a sequence, unless the sequence makes a point. Otherwise it becomes an exercise in cleverness. It must go beyond itself.",w:"Duane Michals"},
+ {q:"Anyone can take a good picture. It’s about how you sequence that and how you take those pictures and make something more meaningful. That’s the secret, that’s the key, that’s the most difficult thing to do, and that’s the real art of what I believe I do.",w:"Trent Parke"},
+ {q:"I don’t think the essence of photography has the hand in it so much. The essence is done very quietly with a flash of the mind, and with a machine. I think too that photography is editing, editing after the taking. After knowing what to take, you have to do the editing.",w:"Walker Evans"},
+ {q:"Editing is how you create meaning, so it’s probably the most important part of the process. It is about getting rid of the clutter and the terrible, embarrassing images, and honing in on what you are really trying to see… sometimes it means starting with ten thousand images and ending up with ten or one.",w:"Carolyn Drake"},
+ {q:"In my view, editing is as important as the actual photographing: it is where you really decide who you are as a photographer, and where you shape your project.",w:"Jonas Bendiksen"},
+ {q:"This benefit of seeing… can come only if you pause a while, extricate yourself from the maddening mob of quick impressions ceaselessly battering our lives, and look thoughtfully at a quiet image… the viewer must be willing to pause, to look again, to meditate.",w:"Dorothea Lange"},
+ {q:"Photography is a process of continuous choosing, in which choosing a photograph from the contact sheet is as important as pressing the shutter release button.",w:"Rinko Kawauchi"},
+ {q:"There are two decisive moments: the moment I take the photograph, and the moment I choose the photograph.",w:"Graciela Iturbide"},
+ {q:"If a serious and prolific photographer were to die, and the negatives given to other photographers or editors who had never seen the work, it’s safe to suggest that they would be far off the mark in presenting the work of this photographer’s intentions [...] Editing, then, becomes the place where ‘content’ is dealt with. The other thing that takes place at this stage is that I begin to consider what a picture does in relation to other pictures. How they speak to each other. A picture placed next to another can alter the ‘meaning’ and sense of both, sometimes radically.",w:"Philip Perkis"},
+ {q:"John Gossage, the great American bookmaker, once said that it was impossible to sequence more than six or seven pictures before you have to start all over again. There’s a lot of truth in this [...] The important thing to remember is that there isn’t just one correct way of sequencing pictures. There are many, and it’s very subjective.",w:"Mark Power"},
+ {q:"I never make a subjective decision when sequencing photographs for a book, exhibition or published article. I always let the photographs speak to me and if I listen hard enough they give me the answer.",w:"Grant Scott"},
+ {q:"noticing the photography of others is not enough to make one a photographer, at least not an original one. One needs to notice the world. What is striking about even [Paul] Graham’s earliest work is the understanding of what happens to subject matter when shot in what Walker Evans called a ‘documentary style’. The image becomes as much a set of propositions as facts. Things become signs of themselves, clear to the eye yet ambiguous in meaning. Making images in that idiom, and then sequencing them without recourse to the explanations of language has become one of the richest ways for a photographer to work.",w:"David Campany"},
+ {q:"The workshops, and all of the exercises I’ve developed for them, are carefully considered, and each one is slightly different [...] essentially, we’re talking about image sequencing. We start off with pairs of images, and then work our way up to long sequences of up to 25 images, and along the way it gradually gets more complicated. The layers of things we’re thinking about build and build, so by the end we have this rich set of issues that we’re dealing with: connection, storytelling, the arch of a sequence, discreet vignettes within that. The ways that size, order, juxtaposition, white space and so on affect meaning.",w:"Jason Fulford"},
+ {q:"Pictures were spread out on the floor of my loft for a long time. Weeks maybe. Me and Nan [Goldin], and Mark Holborn, some of the time, and Suzanne Fletcher, some of the time. Sequencing books is very much like making music. The goal is to make things flow, to get somebody to look and to turn a page. That was the challenge -- to get rid of the extraneous stuff, keep the pictures we couldn’t live without, and then keep cutting from there.",w:"Marvin Heiferman"},
+ {q:"Together, artist and curator, artist and editor, thus structure the flow in the fields of images so that they read like an experiment in visual mapping or the unfolding of an unframed map. They form points of orientation, milestones, signposts, followed by the nimblest of steps, with heightened awareness and the ever-changing view of the photographer as he moves through place and time.",w:"Urs Stahel"},
+ {q:"When I made ‘Farewell Photography’ I felt like the world was fragmenting. At that time, especially as I was very young, I was unhappy with a lot of things and many things seemed wrong. I was constantly irritated thinking “What is photography?” or “Why am I taking photographs?” There were a lot of negatives my friends threw away on the darkroom floor. I started to pick up all those negatives thinking “Why are these on the floor? Let’s use them too.” I said to myself, “These are also images of the world.” That simple thought was the starting point. Once I thought that way, anything was possible.",w:"Daido Moriyama"},
+ {q:"I make these miniature shelves. I cut out my contact sheets and I put these miniature shelves on the wall and just stare at them and edit through them and look at them […] and I just shuffle through them that way and I like to sit with them […] with ‘ZZYZX’ I think they sat on these little shelves and I shuffled them around for over a year thinking about the sequence and the edit and it’s a very helpful part of my process to have this, sort of physical element to it.",w:"Gregory Halpern"},
+ {q:"In the back of the book (‘A Way of Seeing’ by Helen Levitt) is this essay by James Agee and I think it speaks to photographic storytelling. He says ‘I feel that much of the enjoyment of the pictures depends on an appreciation of the tension which they create and reveal between the unimagined world and the imaginable.’ So what he’s talking about there is almost something like surrealism.",w:"Alec Soth"},
+ {q:"I have told certain students to sequence their work as a continuous walk or a sentence or paragraph [...] Sometimes, it’s a good idea to edit out all but the connective photographs so the meaning of the work is not so apologetically explicit.",w:"Justine Kurland"},
+ {q:"a photographic series — photographic comics, pamphlets, books — can be either a potent weapon or tender poetry. But first must come the realisation that the knowledge of photography is just as important as that of the alphabet. THE ILLITERATE OF THE FUTURE WILL BE THE PERSON IGNORANT OF THE CAMERA AS WELL AS THE PEN.",w:"László Moholy-Nagy"},
+ {q:"The best way to communicate and unify your work is by making a story. Show me something I may have seen already but not in this way. Everything has been photographed before, but not by you.",w:"Alison Morley"},
+ {q:"I don’t have some linear idea in mind that ties my images together as I shoot [...] Sequencing is a postproduction thing for me, and I think that’s the way it is with most artists.",w:"Michael Northrup"},
+ {q:"there are two basic kinds of series: those that are sequential and those that are serial [...] Sequences can be narrative, non-narrative, or simply formal [...] Serial images rely on multiplicity and accumulation to drive home their meaning and can generally be arranged in any sequence to create the same conclusion.",w:"Tom Patton"},
+ {q:"We are exiting the era of photography and entering the era of imagery [...] So, for now, stop taking pictures. Set down your camera and focus on visual material that exists; it’s everywhere. Pick a large archive online and download it [...] Now arrange it, rearrange it, crop it, rephotograph it, manipulate it, print it, set the pieces next to each other, pile them in groups, take them away, and place them on walls, place them in grids, place the pieces alone, and find visual threads — the subtext “underneath.” Learn to disturb, distort, remove context, add context, and crucially, create context that did not exist [...] The world is your archive. Go edit it.",w:"Doug Rickard"},
+ {q:"I think making photographs is, as I said before, like gathering the raw material. I used to think of it like gathering words: having a big desk or a big board full of words and then seeing where the connections are — where one wants to break the connections, where one wants to make less of a connection, where one wants to withhold, where one wants to add. That is when the photographs really come alive, because they need to be transformed [...] The primary resource, for me, in doing this editing is the training in music — not my own training but just from being around musicians for such extended periods [...] While I’m editing I like to have restrictions. I like to have certain set notes and then I play with them.",w:"Dayanita Singh"},
+ {q:"1. Go outside and read the Georges Perec text ‘Practical Exercises’ in ‘Species of Spaces and Other Pieces’ twice.\n2. Extract ten directives from Perec and add ten new ones that you write. Examples from Perec include: “Observe the street, from time to time, with some concern for system perhaps … Note down what you can see … Force yourself to see more flatly … Decipher a bit of the town … Try to classify people … Carry on / Until the scene becomes improbable … Make torrential rain fall.”\n3. Write observations based on your list of twenty directives.\n4. Reassemble your material so that the original sequence of time comes undone and a new pattern is formed.",w:"Shannon Ebner"}
+];
+const scrap=document.getElementById('scrap'),scrapQ=document.getElementById('scrap-q'),scrapWho=document.getElementById('scrap-who'),scrapNote=scrap.querySelector('.scrap-note');
+function showScrap(){let last=-1;try{last=parseInt(localStorage.getItem('seqQuote'));}catch(e){}const pool=QUOTES.map((x,i)=>i).filter(i=>!QUOTES[i].q.includes('\n'));let qi;do{qi=pool[Math.floor(Math.random()*pool.length)];}while(pool.length>1&&qi===last);try{localStorage.setItem('seqQuote',qi);}catch(e){}const x=QUOTES[qi];scrapQ.textContent='\u201c'+x.q+'\u201d';scrapWho.textContent='-- '+x.w;const v=[[56,66],[78,54],[98,46]][Math.floor(Math.random()*3)];const pr=60+Math.round(Math.random()*74);scrapNote.style.padding=v[0]+'px '+pr+'px '+v[1]+'px 64px';scrapNote.style.setProperty('--rot',(-0.4-Math.random()*2.3).toFixed(2)+'deg');scrapNote.style.color=['#2b2723','#2b2723','#2b2723','#bb3b2d','#41598a'][Math.floor(Math.random()*5)];scrap.classList.remove('gone');scrap.style.display='flex';}
+scrap.addEventListener('click',()=>{scrap.classList.add('gone');setTimeout(()=>{scrap.style.display='none';},480);});
+
+const table=document.getElementById('table');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cardLabel=document.getElementById('card-label');
+const cardStack=document.getElementById('card-stack');
+const pileHint=document.getElementById('pile-hint');
+let zTop=100;
+let topIdx=0;
+
+function baseImg(aspect){
+  const vmin=Math.min(innerWidth,innerHeight);
+  const side=Math.max(108,Math.min(168,Math.round(vmin/6.2)));
+  const area=side*side;
+  return {iw:Math.round(Math.sqrt(area*aspect)),ih:Math.round(Math.sqrt(area/aspect)),side};
+}
+function setSize(n,s){n.scale=s;n.img.style.width=Math.round(n.iw*s)+'px';n.img.style.height=Math.round(n.ih*s)+'px';n.w=Math.round(n.iw*s)+10;n.h=Math.round(n.ih*s)+10;}
+function paint(n,animate){n.fig.style.transition=animate?'transform .5s cubic-bezier(.22,.61,.36,1)':'none';n.fig.style.transform=`translate(${n.x}px,${n.y}px) rotate(${n.rot}deg)`;}
+function makeNode(m){
+  const fig=document.createElement('figure');fig.className='print';fig.tabIndex=0;fig.setAttribute('aria-label',m.short||'photograph');
+  const img=document.createElement('img');img.src=m.src;img.alt='';img.draggable=false;fig.appendChild(img);
+  return {m,fig,img,state:'pile',x:0,y:0,rot:0,scale:1,iw:0,ih:0,w:0,h:0,side:0};
+}
+const parkNodes=MANIFEST.map(makeNode);
+let mineNodes=[];let active=parkNodes;
+
+let pileRect={left:0,top:0,right:0,bottom:0,w:0,h:0};
+let chromeTop=70;
+function layoutChrome(){
+  const b=baseImg(1.0);
+  const box=Math.round(b.side*1.5);const edge=30,top=54;
+  const centerY=top+box/2;
+  pileRect={left:edge,top:top,right:edge+box,bottom:top+box,w:box,h:box};
+  const cardW=Math.round(b.side*1.62),cardH=Math.round(cardW*0.8);   // 5:4 landscape
+  buildDeck(cardW,cardH,edge+26,centerY);
+  const labelY=top+box+18;
+  pileHint.style.top=labelY+'px';positionHint();
+  cardLabel.style.left=(innerWidth-(edge+26)-cardW)+'px';cardLabel.style.right='auto';cardLabel.style.width=cardW+'px';cardLabel.style.top=labelY+'px';cardLabel.style.transform='none';cardLabel.style.textAlign='center';
+  chromeTop=labelY+22;
+}
+function buildDeck(cw,ch,rightPx,centerY){
+  cardStack.innerHTML='';
+  const cx=innerWidth-rightPx-cw/2, cy=centerY;
+  for(let i=0;i<7;i++){
+    const c=document.createElement('div');c.className='tcard';
+    c.style.width=cw+'px';c.style.height=ch+'px';
+    const jx=(Math.random()*2-1)*4,jy=(Math.random()*2-1)*4,rot=(Math.random()*2-1)*1.6;
+    c.style.transform=`translate(${cx-cw/2+jx}px,${cy-ch/2+jy}px) rotate(${rot}deg)`;
+    c.style.zIndex=40+i;
+    if(i===6){
+      const t=TACTICS[topIdx];
+      const tfs=Math.max(13,Math.round(cw/15)), bfs=Math.max(9,Math.round(cw/22)), rh=Math.round(bfs*1.5);
+      c.innerHTML=`<div class="tc-head" style="font-size:${tfs}px">${t.t}</div>`+
+        `<div class="tc-mini" style="font-size:${bfs}px;line-height:${rh}px;top:${tfs+18}px;bottom:9px;`+
+        `background-image:repeating-linear-gradient(to bottom,transparent 0,transparent ${rh-1}px,rgba(0,0,0,.06) ${rh-1}px,rgba(0,0,0,.06) ${rh}px)">${t.f}</div>`;
+    }else{
+      c.innerHTML='<div class="tc-rule"></div><div class="tc-lines"></div>';
+    }
+    cardStack.appendChild(c);
+  }
+}
+
+function pileNodes(){return active.filter(n=>n.state==='pile');}
+function shuffled(arr){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function restackPile(animate){
+  const cx=pileRect.left+pileRect.w/2,cy=pileRect.top+pileRect.h/2;
+  const cur=pileNodes();
+  const prevTop=cur.reduce((a,b)=>((+a.fig.style.zIndex||0)>=(+b.fig.style.zIndex||0)?a:b),cur[0]);
+  const ps=shuffled(cur);
+  if(ps.length>1&&ps[ps.length-1]===prevTop){const j=Math.floor(Math.random()*(ps.length-1));[ps[ps.length-1],ps[j]]=[ps[j],ps[ps.length-1]];}
+  ps.forEach((n,i)=>{if(n.scale!==1)setSize(n,1);n.x=cx-n.w/2+(Math.random()*2-1)*9;n.y=cy-n.h/2+(Math.random()*2-1)*9;n.rot=(Math.random()*2-1)*2.4;n.fig.style.zIndex=60+i;paint(n,animate&&!reduce);});
+}
+function positionHint(){
+  const ps=active.filter(n=>n.state==='pile');
+  if(!ps.length)return;
+  let l=Infinity,r=-Infinity;
+  ps.forEach(n=>{const b=n.fig.getBoundingClientRect();if(b.width>2){l=Math.min(l,b.left);r=Math.max(r,b.right);}});
+  if(!isFinite(l))return;
+  pileHint.style.whiteSpace='nowrap';pileHint.style.width='auto';pileHint.style.transform='none';pileHint.style.textAlign='center';
+  pileHint.style.left=Math.round((l+r)/2-pileHint.getBoundingClientRect().width/2)+'px';
+}
+function tableRegion(){return {top:chromeTop,bottom:innerHeight-78,left:Math.max(40,innerWidth*0.06),right:innerWidth-Math.max(40,innerWidth*0.06)};}
+function spread(){const b=tableRegion();pileNodes().forEach(n=>{if(n.scale!==1)setSize(n,1);n.state='table';n.x=b.left+Math.random()*Math.max(1,(b.right-b.left-n.w));n.y=b.top+Math.random()*Math.max(1,(b.bottom-b.top-n.h));n.rot=(Math.random()*2-1)*4;n.fig.style.zIndex=++zTop;paint(n,!reduce);});}
+function gather(){active.forEach(n=>n.state='pile');restackPile(true);}
+function shuffle(){restackPile(true);}
+function arrange(order){
+  active.forEach(n=>{n.state='table';if(n.scale!==1)setSize(n,1);});
+  const b=tableRegion();const side=baseImg(1.0).side;
+  const stepX=Math.round(side*1.04),stepY=Math.round(side*0.92);
+  const regionW=b.right-b.left;
+  let cols=Math.max(1,Math.floor(regionW/stepX));cols=Math.min(cols,order.length);
+  const rows=Math.ceil(order.length/cols);
+  const blockW=cols*stepX,blockH=rows*stepY;
+  const startX=b.left+(regionW-blockW)/2+stepX/2;
+  const startY=b.top+Math.max(0,((b.bottom-b.top)-blockH)/2)+stepY/2;
+  order.forEach((n,i)=>{const col=i%cols,row=Math.floor(i/cols);const cx=startX+col*stepX,cy=startY+row*stepY;
+    const jx=(Math.random()*2-1)*5,jy=(Math.random()*2-1)*5;
+    n.rot=Math.random()<0.45?0:(Math.random()*2-1)*5;n.x=cx-n.w/2+jx;n.y=cy-n.h/2+jy;n.fig.style.zIndex=200+i;paint(n,!reduce);});
+}
+function byChance(){arrange(shuffled(active));}
+let toneDir=1;
+function byTone(){arrange([...active].sort((a,b)=>(a.m.lum-b.m.lum)*toneDir));toneDir*=-1;}
+
+// drag / deal / return / examine
+let drag=null;const TAP=6;
+table.addEventListener('pointerdown',e=>{const fig=e.target.closest('.print');if(!fig)return;const n=active.find(o=>o.fig===fig);if(!n)return;
+  fig.setPointerCapture(e.pointerId);fig.style.zIndex=++zTop;fig.style.transition='none';drag={n,sx:e.clientX,sy:e.clientY,px:e.clientX,py:e.clientY,moved:false};});
+table.addEventListener('pointermove',e=>{if(!drag)return;const{n}=drag;
+  if(!drag.moved&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>TAP){drag.moved=true;n.fig.classList.add('dragging');dismissHint();}
+  if(drag.moved){n.x+=e.clientX-drag.px;n.y+=e.clientY-drag.py;drag.px=e.clientX;drag.py=e.clientY;n.fig.style.transform=`translate(${n.x}px,${n.y}px) rotate(${n.rot}deg)`;}});
+function endDrag(){if(!drag)return;const d=drag;drag=null;d.n.fig.classList.remove('dragging');
+  if(!d.moved){openLightbox(d.n.m);return;}
+  const cx=d.n.x+d.n.w/2,cy=d.n.y+d.n.h/2;
+  if(cx>=pileRect.left&&cx<=pileRect.right&&cy>=pileRect.top&&cy<=pileRect.bottom){d.n.state='pile';restackPile(true);}else{d.n.state='table';}}
+table.addEventListener('pointerup',endDrag);table.addEventListener('pointercancel',endDrag);
+table.addEventListener('keydown',e=>{const fig=e.target.closest('.print');if(!fig)return;const n=active.find(o=>o.fig===fig);if(!n)return;
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();openLightbox(n.m);return;}
+  const step=e.shiftKey?16:4;let used=true;
+  if(e.key==='ArrowLeft')n.x-=step;else if(e.key==='ArrowRight')n.x+=step;else if(e.key==='ArrowUp')n.y-=step;else if(e.key==='ArrowDown')n.y+=step;else used=false;
+  if(used){e.preventDefault();n.state='table';fig.style.zIndex=++zTop;paint(n,false);}});
+
+// print lightbox
+const lb=document.getElementById('lightbox'),flip=document.getElementById('lb-flip');
+const lbImg=document.getElementById('lb-img'),lbCard=document.getElementById('lb-card'),lbBack=document.getElementById('lb-back');
+const lbShort=document.getElementById('lb-short'),lbReveal=document.getElementById('lb-reveal');
+function fitSize(aspect){const BW=Math.min(innerWidth*0.84,760),BH=innerHeight*0.62;let w,h;if(BW/BH>aspect){h=BH;w=h*aspect;}else{w=BW;h=w/aspect;}return{w:Math.round(w),h:Math.round(h)};}
+function reproNo(id){return 'LC-DIG-fsa-'+id.replace(/[rv]$/,'');}
+function openLightbox(m){
+  const s=fitSize(m.aspect);flip.style.width=s.w+'px';flip.style.height=s.h+'px';flip.classList.remove('flipped');
+  lbImg.src=m.src;lbImg.alt=m.short||'';lbShort.textContent=m.short||'';lbReveal.textContent='Turn it over';
+  const fontPx=Math.max(12,Math.min(16,Math.min(innerWidth,innerHeight)/40));lbCard.style.fontSize=fontPx.toFixed(1)+'px';
+  if(m.isUser){lbBack.classList.add('plain');lbCard.classList.add('usr');lbCard.innerHTML='<div>Your image</div>';}
+  else{lbBack.classList.remove('plain');lbCard.classList.remove('usr');
+    lbCard.innerHTML=`<p class="c-cap">${m.full}</p><div class="c-row"><span>Photograph by Gordon Parks</span></div><div class="c-row">Farm Security Administration \u00b7 Office of War Information</div><div class="c-stamp">${reproNo(m.locId)}</div><a class="c-link" href="${m.loc_url}" target="_blank" rel="noopener">View at the Library of Congress \u203a</a>`;}
+  lb.classList.add('on');
+}
+function closeLightbox(){lb.classList.remove('on');}
+function toggleFlip(){const f=flip.classList.toggle('flipped');lbReveal.textContent=f?'Turn back':'Turn it over';}
+lbReveal.addEventListener('click',e=>{e.stopPropagation();toggleFlip();});
+flip.addEventListener('click',e=>{if(e.target.closest('.c-link'))return;e.stopPropagation();toggleFlip();});
+lb.addEventListener('click',e=>{if(e.target===lb)closeLightbox();});
+
+// tactics reader
+const cardbox=document.getElementById('cardbox'),fcFlip=document.getElementById('fc-flip');
+const fcTitle=document.getElementById('fc-title'),fcFront=document.getElementById('fc-frontbody'),fcBack=document.getElementById('fc-backbody');
+const fcTurn=document.getElementById('fc-turn'),fcIdx=document.getElementById('fc-idx');
+let cardIdx=0;
+function renderCard(i){
+  const c=TACTICS[i];
+  fcTitle.textContent=c.t;
+  fcFront.innerHTML=`<svg class="fc-dia" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${DIA[i]}</svg><p class="fc-instr">${c.f}</p><p class="fc-how">${c.h}</p>`;
+  fcBack.innerHTML=`<p>${c.b}</p>`;
+  fcIdx.textContent=(i+1)+' / '+TACTICS.length;
+}
+function sizeCard(){
+  const w=Math.min(innerWidth*0.84,540), h=Math.round(w*0.8);
+  fcFlip.style.width=w+'px';fcFlip.style.height=h+'px';
+  const fs=Math.max(13,Math.round(w/30)), rh=Math.round(fs*1.55);
+  [fcFront,fcBack].forEach(el=>{el.style.fontSize=fs+'px';el.style.lineHeight=rh+'px';el.style.setProperty('--rh',rh+'px');el.style.padding=Math.round(h*0.05)+'px '+Math.round(w*0.07)+'px';});
+  const tf=Math.round(fs*1.5);
+  document.querySelectorAll('#cardbox .fc-name').forEach(el=>{el.style.fontSize=tf+'px';el.style.padding='0 14px 5px 0';el.style.margin='0 0 6px';});
+  const pad=Math.round(w*0.07);
+  [...document.querySelectorAll('#cardbox .fc-face')].forEach(el=>{el.style.padding=pad+'px';});
+}
+function openCardbox(i){cardIdx=i;renderCard(i);sizeCard();fcFlip.classList.remove('flipped');fcTurn.textContent='Turn it over';cardbox.classList.add('on');}
+function closeCardbox(){cardbox.classList.remove('on');}
+function cardTurn(){const f=fcFlip.classList.toggle('flipped');fcTurn.textContent=f?'Turn back':'Turn it over';}
+function cardStep(d){cardIdx=(cardIdx+d+TACTICS.length)%TACTICS.length;fcFlip.classList.remove('flipped');fcTurn.textContent='Turn it over';renderCard(cardIdx);}
+cardStack.addEventListener('click',()=>{closeLightbox();openCardbox(topIdx);dismissHint();});
+cardStack.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCardbox(topIdx);}});
+fcFlip.addEventListener('click',e=>{if(e.target.closest('a'))return;e.stopPropagation();cardTurn();});
+fcTurn.addEventListener('click',e=>{e.stopPropagation();cardTurn();});
+document.getElementById('fc-prev').addEventListener('click',e=>{e.stopPropagation();cardStep(-1);});
+document.getElementById('fc-next').addEventListener('click',e=>{e.stopPropagation();cardStep(1);});
+cardbox.addEventListener('click',e=>{if(e.target===cardbox)closeCardbox();});
+
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeLightbox();closeCardbox();closeDrawers();}
+  if(cardbox.classList.contains('on')){if(e.key==='ArrowRight')cardStep(1);if(e.key==='ArrowLeft')cardStep(-1);}
+});
+
+// controls
+let hintGone=false;
+function dismissHint(){if(!hintGone){hintGone=true;pileHint.classList.add('gone');}}
+function wrap(fn){return()=>{closeLightbox();closeCardbox();fn();dismissHint();};}
+document.getElementById('b-shuffle').addEventListener('click',wrap(shuffle));
+document.getElementById('b-spread').addEventListener('click',wrap(spread));
+document.getElementById('b-gather').addEventListener('click',wrap(gather));
+document.getElementById('b-chance').addEventListener('click',wrap(byChance));
+document.getElementById('b-tone').addEventListener('click',wrap(byTone));
+function exportTable(){
+  const nodes=active.filter(n=>n.state==='table');
+  if(!nodes.length)return;
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  nodes.forEach(n=>{const cx=n.x+n.w/2,cy=n.y+n.h/2,a=Math.abs(n.rot*Math.PI/180);
+    const hx=Math.abs(Math.cos(a))*n.w/2+Math.abs(Math.sin(a))*n.h/2;
+    const hy=Math.abs(Math.sin(a))*n.w/2+Math.abs(Math.cos(a))*n.h/2;
+    minX=Math.min(minX,cx-hx);maxX=Math.max(maxX,cx+hx);minY=Math.min(minY,cy-hy);maxY=Math.max(maxY,cy+hy);});
+  const margin=Math.round(baseImg(1.0).side*0.14);
+  minX-=margin;minY-=margin;maxX+=margin;maxY+=margin;
+  const W=Math.round(maxX-minX),H=Math.round(maxY-minY),sf=2;
+  const cv=document.createElement('canvas');cv.width=W*sf;cv.height=H*sf;
+  const g=cv.getContext('2d');g.scale(sf,sf);
+  nodes.slice().sort((a,b)=>(parseInt(a.fig.style.zIndex)||0)-(parseInt(b.fig.style.zIndex)||0)).forEach(n=>{
+    const cx=n.x+n.w/2-minX,cy=n.y+n.h/2-minY,iw=n.w-10,ih=n.h-10;
+    g.save();g.translate(cx,cy);g.rotate(n.rot*Math.PI/180);
+    g.fillStyle='#fbfbfa';g.fillRect(-n.w/2,-n.h/2,n.w,n.h);
+    try{g.drawImage(n.img,-iw/2,-ih/2,iw,ih);}catch(e){}
+    g.restore();});
+  cv.toBlob(b=>{const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='sequence.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);},'image/png');
+}
+document.getElementById('b-save').addEventListener('click',exportTable);
+
+// drawers
+const scrim=document.getElementById('scrim');
+const drawerInfo=document.getElementById('drawer-info'),drawerUpload=document.getElementById('drawer-upload');
+function openDrawer(d){closeLightbox();closeCardbox();scrim.classList.add('on');d.classList.add('on');}
+function closeDrawers(){scrim.classList.remove('on');drawerInfo.classList.remove('on');drawerUpload.classList.remove('on');}
+document.getElementById('b-info').addEventListener('click',()=>openDrawer(drawerInfo));
+document.getElementById('b-images').addEventListener('click',()=>openDrawer(drawerUpload));
+scrim.addEventListener('click',closeDrawers);
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeDrawers));
+const readEl=document.getElementById('read'),readList=document.getElementById('read-list');
+function buildReadList(){
+  const sorted=QUOTES.slice().sort((a,b)=>a.w.trim().split(/\s+/).pop().localeCompare(b.w.trim().split(/\s+/).pop()));
+  readList.innerHTML=sorted.map(()=>'<div class="read-q"><p class="rq-text"></p><p class="rq-who"></p></div>').join('');
+  const items=readList.querySelectorAll('.read-q');
+  sorted.forEach((x,i)=>{items[i].querySelector('.rq-text').textContent='“'+x.q+'”';items[i].querySelector('.rq-who').textContent=x.w;});
+}
+function showRead(on){readEl.style.display=on?'block':'none';if(on){buildReadList();readEl.scrollTop=0;}}
+window.addEventListener('hashchange',()=>showRead(location.hash==='#read'));
+document.getElementById('read-close').addEventListener('click',()=>{if(location.hash==='#read')history.back();else showRead(false);});
+if(location.hash==='#read')showRead(true);
+
+// uploads
+const fileInput=document.getElementById('file'),status=document.getElementById('upload-status');
+const setrow=document.getElementById('setrow'),setParks=document.getElementById('set-parks'),setMine=document.getElementById('set-mine'),clearMine=document.getElementById('clear-mine');
+function avgLum(img){const c=document.createElement('canvas');c.width=32;c.height=32;const x=c.getContext('2d');x.drawImage(img,0,0,32,32);const d=x.getImageData(0,0,32,32).data;let s=0;for(let i=0;i<d.length;i+=4){s+=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];}return s/(32*32);}
+function loadFile(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{let lum=128;try{lum=avgLum(img);}catch(e){}const name=file.name.replace(/\.[^.]+$/,'');res({src:url,aspect:img.naturalWidth/img.naturalHeight,lum,short:name,full:name,isUser:true,locId:null,loc_url:null});};img.onerror=()=>rej();img.src=url;});}
+fileInput.addEventListener('change',async e=>{
+  const files=[...e.target.files].filter(f=>f.type.startsWith('image/')).slice(0,36);if(!files.length)return;
+  status.textContent='Loading\u2026';const items=[];
+  for(const f of files){try{items.push(await loadFile(f));}catch(_){}}
+  mineNodes=items.map(makeNode);status.textContent=mineNodes.length+' image'+(mineNodes.length===1?'':'s')+' added.';
+  setrow.style.display='flex';clearMine.style.display='inline';fileInput.value='';switchSet('mine');
+});
+function switchSet(which){const target=which==='mine'?mineNodes:parkNodes;if(target===active||!target.length)return;
+  active.forEach(n=>n.fig.remove());active=target;active.forEach(n=>{table.appendChild(n.fig);n.state='pile';});
+  initSizes(active);restackPile(false);setParks.classList.toggle('active',active===parkNodes);setMine.classList.toggle('active',active===mineNodes);}
+setParks.addEventListener('click',()=>switchSet('parks'));setMine.addEventListener('click',()=>switchSet('mine'));
+clearMine.addEventListener('click',()=>{if(active===mineNodes)switchSet('parks');mineNodes.forEach(n=>{try{URL.revokeObjectURL(n.m.src);}catch(_){}n.fig.remove();});mineNodes=[];setrow.style.display='none';clearMine.style.display='none';status.textContent='';});
+
+// init / resize
+function initSizes(arr){arr.forEach(n=>{const b=baseImg(n.m.aspect);n.iw=b.iw;n.ih=b.ih;n.side=b.side;setSize(n,1);});}
+function boot(){topIdx=Math.floor(Math.random()*TACTICS.length);layoutChrome();parkNodes.forEach(n=>table.appendChild(n.fig));initSizes(parkNodes);active.forEach(n=>n.state='pile');restackPile(false);positionHint();requestAnimationFrame(positionHint);showScrap();}
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{layoutChrome();initSizes(active);restackPile(false);positionHint();if(cardbox.classList.contains('on'))sizeCard();},160);});
+boot();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{layoutChrome();requestAnimationFrame(positionHint);});
+</script>
+</body>
+</html>
